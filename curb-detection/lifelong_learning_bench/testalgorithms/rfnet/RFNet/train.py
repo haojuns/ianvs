@@ -4,6 +4,9 @@ import numpy as np
 from tqdm import tqdm
 import torch
 
+import sys
+sys.path.append('examples/curb-detection/lifelong_learning_bench/testalgorithms/rfnet/RFNet')
+
 from mypath import Path
 from dataloaders import make_data_loader
 from models.rfnet import RFNet
