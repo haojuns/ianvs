@@ -2,7 +2,7 @@ benchmarkingjob:
   # job name of bechmarking; string type;
   name: "benchmarkingjob"
   # the url address of job workspace that will reserve the output of tests; string type;
-  workspace: "/ianvs/singletask_learning_bench/workspace"
+  workspace: "./singletask_learning_bench/workspace"
 
   # the url address of test environment configuration file; string type;
   # the file format supports yaml/yml;
@@ -64,7 +64,6 @@ benchmarkingjob:
     #  1> "selected_and_all": save selected and all dataitems;
     #  2> "selected_only": save selected dataitems;
     save_mode: "selected_and_all"
-
 
 
 
