@@ -2,9 +2,9 @@ testenv:
   # dataset configuration
   dataset:
     # the url address of train dataset index; string type;
-    train_url: "/ianvs/dataset/train_data/index.txt"
+    train_url: "./dataset/PCB-aoi/train_data/index.txt"
     # the url address of test dataset index; string type;
-    test_url: "/ianvs/dataset/test_data/index.txt"
+    test_url: "./dataset/PCB-aoi/test_data/index.txt"
 
   # metrics configuration for test case's evaluation; list type;
   metrics:
