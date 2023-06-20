@@ -34,6 +34,7 @@ class BaseModel:
 
     def train(self, train_data, valid_data=None, **kwargs):
         # print(self.train_args) # self.train_args: <RFNet.utils.args.TrainArgs object at 0x7fcab6741af0>
+        # print(train_data) # <sedna.datasources.TxtDataParse object at 0x7f75b11def10
         self.trainer = Trainer(self.train_args, train_data=train_data)
         print("Total epoches:", self.trainer.args.epochs)
         for epoch in range(

@@ -2,7 +2,7 @@ from dataloaders.datasets import cityscapes, citylostfound, cityrand, target, xr
 from torch.utils.data import DataLoader
 
 def make_data_loader(args, train_data=None, valid_data=None, test_data=None, **kwargs):
-    print("who are you?", args.dataset)
+
     if args.dataset == 'cityscapes':
         if train_data is not None:
             train_set = cityscapes.CityscapesSegmentation(args, data=train_data, split='train')

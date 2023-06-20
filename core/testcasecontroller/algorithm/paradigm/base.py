@@ -82,7 +82,7 @@ class ParadigmBase:
         #print(module_instances)
         return module_instances
 
-    def build_paradigm_job(self, paradigm_type) -> class: 
+    def build_paradigm_job(self, paradigm_type):
         """
         build paradigm job instance according to paradigm type.
         this job instance provides the test flow of some algorithm modules.

@@ -99,6 +99,7 @@ class Trainer(object):
         tbar = tqdm(self.train_loader)
         num_img_tr = len(self.train_loader)
 
+        print("are you here?")
         for i, sample in enumerate(tbar):
             if self.args.depth:
                 image, depth, target = sample['image'], sample['depth'], sample['label']
