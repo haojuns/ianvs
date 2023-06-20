@@ -1,0 +1,26 @@
+algorithm:
+  # paradigm name; string type;
+  # currently the options of value are as follows:
+  #   1> "singletasklearning"
+  #   2> "incrementallearning"
+  paradigm_type: "singletasklearning"
+  # the url address of initial model; string type; optional;
+  initial_model_url: "/ianvs/initial_model/model.zip"
+
+  # algorithm module configuration in the paradigm; list type;
+  modules:
+    # type of algorithm module; string type;
+    # currently the options of value are as follows:
+    #   1> "basemodel": contains important interfaces such as train、 eval、 predict and more; required module;
+    - type: "basemodel"
+      # name of python module; string type;
+      # example: basemodel.py has BaseModel module that the alias is "FPN" for this benchmarking;
+      name: "BaseModel"
+      # the url address of python module; string type;
+      url: "./examples/curb-detection/latenttask_learning_bench/testalgorithms/rfnet/basemodel.py"
+      # hyperparameters configuration for the python module; list type;
+      hyperparameters:
+        # name of the hyperparameter; string type;
+        - learning_rate:
+            values:
+              - 0.0001

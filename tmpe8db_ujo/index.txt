@@ -1,0 +1,5 @@
+/data/user8302433/fc/dataset/curb-detection/test_data/images/real_aachen_000000_000019_leftImg8bit.png /data/user8302433/fc/dataset/curb-detection/test_data/images/real_aachen_000000_000019_gtFine_labelTrainIds.png
+/data/user8302433/fc/dataset/curb-detection/test_data/images/real_aachen_000001_000019_leftImg8bit.png /data/user8302433/fc/dataset/curb-detection/test_data/images/real_aachen_000001_000019_gtFine_labelTrainIds.png
+/data/user8302433/fc/dataset/curb-detection/test_data/images/real_aachen_000002_000019_leftImg8bit.png /data/user8302433/fc/dataset/curb-detection/test_data/images/real_aachen_000002_000019_gtFine_labelTrainIds.png
+/data/user8302433/fc/dataset/curb-detection/test_data/images/real_aachen_000003_000019_leftImg8bit.png /data/user8302433/fc/dataset/curb-detection/test_data/images/real_aachen_000003_000019_gtFine_labelTrainIds.png
+/data/user8302433/fc/dataset/curb-detection/test_data/images/real_aachen_000004_000019_leftImg8bit.png /data/user8302433/fc/dataset/curb-detection/test_data/images/real_aachen_000004_000019_gtFine_labelTrainIds.png

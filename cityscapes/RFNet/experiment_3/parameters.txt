@@ -1,0 +1,7 @@
+datset:cityscapes
+lr:0.0001
+lr_scheduler:cos
+loss_type:ce
+epoch:2
+base_size:1024
+crop_size:768

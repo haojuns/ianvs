@@ -1,0 +1,132 @@
+# Copyright 2022 The KubeEdge Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Paradigm Base"""
+
+import os
+
+from sedna.core.incremental_learning import IncrementalLearning
+from sedna.core.lifelong_learning import LifelongLearning
+
+from core.common.constant import ModuleType, ParadigmType
+
+
+class ParadigmBase:
+    """
+    Paradigm Base
+    Notes:
+          1. Ianvs serves as testing tools for test objects, e.g., algorithms.
+          2. Ianvs does NOT include code directly on test object.
+          3. Algorithms serve as typical test objects in Ianvs
+          and detailed algorithms are thus NOT included in this Ianvs python file.
+          4. As for the details of example test objects, e.g., algorithms,
+          please refer to third party packages in Ianvs example.
+          For example, AI workflow and interface pls refer to sedna
+          (sedna docs: https://sedna.readthedocs.io/en/latest/api/lib/index.html),
+          and module implementation pls refer to `examples' test algorithms`,
+          e.g., basemodel.py, hard_example_mining.py.
+
+    Parameters
+    ---------
+    workspace: string
+        the output required for test process of AI algorithm paradigm.
+    kwargs: dict
+        config required for the test process of AI algorithm paradigm,
+        e.g.: algorithm modules, dataset, etc.
+
+    """
+
+    def __init__(self, workspace, **kwargs):
+        self.modules = kwargs.get("modules")#是一系列module_type对应的
+        self.dataset = kwargs.get("dataset")
+        self.workspace = workspace
+        self.system_metric_info = {}
+        self.module_instances = self._get_module_instances()#是一系列module_type对应的类
+        os.environ["LOCAL_TEST"] = "TRUE"
+
+    def dataset_output_dir(self):
+        """
+        get output dir of dataset in test process
+
+        Returns
+        ------
+        str
+
+        """
+        output_dir = os.path.join(self.workspace, "dataset")
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        return output_dir
+
+    #遍历self.modules 中每个模块类型和模块实例，并将其添加到 module_instances 字典中
+    def _get_module_instances(self):
+        module_instances = {}
+        print("---",self.modules.items())
+        for module_type, module in self.modules.items():
+            #module_type:basemodel
+            #module:<core.testcasecontroller.algorithm.module.module.Module object at 0x7f16e018dcd0>,是个无特定属性的module类
+            func = module.get_module_instance(module_type)
+            #module_type： "basemodel"
+            module_instances.update({module_type: func})
+        #print(module_instances)
+        return module_instances
+
+    def build_paradigm_job(self, paradigm_type) -> class: 
+        """
+        build paradigm job instance according to paradigm type.
+        this job instance provides the test flow of some algorithm modules.
+
+        Parameters
+        ---------
+        paradigm_type: str
+
+        Returns
+        -------
+        instance
+
+        """
+        if paradigm_type == ParadigmType.SINGLE_TASK_LEARNING.value:#如果判断是单任务学习
+            return self.module_instances.get(ModuleType.BASEMODEL.value)#那么就返回单任务学习需要的算法模块（终身学习：还有任务定义等等）
+
+        if paradigm_type == ParadigmType.INCREMENTAL_LEARNING.value:
+            return IncrementalLearning(
+                estimator=self.module_instances.get(ModuleType.BASEMODEL.value),
+                hard_example_mining=self.module_instances.get(
+                    ModuleType.HARD_EXAMPLE_MINING.value))
+
+        if paradigm_type == ParadigmType.LIFELONG_LEARNING.value:
+            return LifelongLearning(
+                estimator=self.module_instances.get(
+                    ModuleType.BASEMODEL.value),
+                task_definition=self.module_instances.get(
+                    ModuleType.TASK_DEFINITION.value),
+                task_relationship_discovery=self.module_instances.get(
+                    ModuleType.TASK_RELATIONSHIP_DISCOVERY.value),
+                task_allocation=self.module_instances.get(
+                    ModuleType.TASK_ALLOCATION.value),
+                task_remodeling=self.module_instances.get(
+                    ModuleType.TASK_REMODELING.value),
+                inference_integrate=self.module_instances.get(
+                    ModuleType.INFERENCE_INTEGRATE.value),
+                task_update_decision=self.module_instances.get(
+                    ModuleType.TASK_UPDATE_DECISION.value),
+                unseen_task_allocation=self.module_instances.get(
+                    ModuleType.UNSEEN_TASK_ALLOCATION.value),
+                unseen_sample_recognition=self.module_instances.get(
+                    ModuleType.UNSEEN_SAMPLE_RECOGNITION.value),
+                unseen_sample_re_recognition=self.module_instances.get(
+                    ModuleType.UNSEEN_SAMPLE_RE_RECOGNITION.value)
+            )
+
+        return None

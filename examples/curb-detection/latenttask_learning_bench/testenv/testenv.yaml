@@ -1,0 +1,17 @@
+testenv:
+  # dataset configuration
+  dataset: 
+    # the url address of train dataset index; string type;
+    train_url: "/data/user8302433/fc/dataset/curb-detection/train_data/index_test.txt"
+    # the url address of test dataset index; string type;
+    test_url: "/data/user8302433/fc/dataset/curb-detection/test_data/index_test.txt"
+
+  # metrics configuration for test case's evaluation; list type;
+  metrics:
+      # metric name; string type;
+    - name: "accuracy"
+      # the url address of python file
+      url: "./examples/curb-detection/latenttask_learning_bench/testenv/accuracy.py"
+    - name: "mIoU"
+      url: "./examples/curb-detection/latenttask_learning_bench/testenv/mIoU.py"
+    - name: "samples_transfer_ratio"
