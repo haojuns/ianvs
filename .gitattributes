@@ -1,0 +1,1 @@
+sednas/seen_task/semantic_segamentation_model.pth filter=lfs diff=lfs merge=lfs -text
