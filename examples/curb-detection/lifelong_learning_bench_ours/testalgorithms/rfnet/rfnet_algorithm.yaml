@@ -47,6 +47,9 @@ algorithm:
             values:
               # - [ "real", "sim" ]
               - ["all"]
+        - splits:
+            values:
+              - 3
     #  3> "task_allocation": allocate lifelong task ; optional module;
     - type: "task_allocation"
       # name of python module; string type;

@@ -17,6 +17,7 @@ from models import rfnet_for_unseen
 from models.resnet.resnet_single_scale_single_attention import *
 from models.resnet import resnet_single_scale_single_attention_unseen
 import torch.backends.cudnn as cudnn
+import pdb
 
 class Validator(object):
     def __init__(self, args, data=None, unseen_detection=False):
@@ -118,7 +119,81 @@ class Validator(object):
                     print('save image: {}'.format(merge_label_name))
             
         return predictions
-  
+
+    def extraction_embedding(self):        
+        self.model.eval()
+        self.evaluator.reset()
+        # tbar = tqdm(self.test_loader, desc='\r')
+        predictions = []
+        task_embeddings = []
+        
+        import pdb
+        #pdb.set_trace()
+        for sample, image_name in self.test_loader:
+            if self.args.depth:
+                image, depth, target = sample['image'], sample['depth'], sample['label']
+            else:
+                # spec = time.time()
+                image, target = sample['image'], sample['label']            
+            
+            if self.args.cuda:
+                image = image.cuda()
+                if self.args.depth:
+                    depth = depth.cuda()
+                    
+            with torch.no_grad():
+                if self.args.depth:
+                    output, embedding_code = self.model(image, depth, embedding = True)
+                else:
+                    output, embedding_code = self.model(image, embedding = True)
+
+            #pdb.set_trace()
+
+            if self.args.cuda:
+                torch.cuda.synchronize()
+
+            pred = output.data.cpu().numpy()
+            # todo
+            pred = np.argmax(pred, axis=1)
+            predictions.append(pred)
+            
+            task_embeddings.append([embedding_code, image_name])
+
+            if not self.args.save_predicted_image:
+                continue
+            
+            pre_colors = Colorize()(torch.max(output, 1)[1].detach().cpu().byte())
+            pre_labels = torch.max(output, 1)[1].detach().cpu().byte()
+            print(pre_labels.shape)
+            # save
+            for i in range(pre_colors.shape[0]):
+                print(image_name[0])
+
+                if not image_name[0]:
+                    img_name = "test.png"
+                else:
+                    img_name = os.path.basename(image_name[0])
+
+                color_label_name = os.path.join(self.args.color_label_save_path, img_name)
+                label_name = os.path.join(self.args.label_save_path, img_name)
+                merge_label_name = os.path.join(self.args.merge_label_save_path, img_name)
+
+                os.makedirs(os.path.dirname(color_label_name), exist_ok=True)
+                os.makedirs(os.path.dirname(merge_label_name), exist_ok=True)
+                os.makedirs(os.path.dirname(label_name), exist_ok=True)
+
+                pre_color_image = ToPILImage()(pre_colors[i])  # pre_colors.dtype = float64
+                pre_color_image.save(color_label_name)
+
+                pre_label_image = ToPILImage()(pre_labels[i])
+                pre_label_image.save(label_name)
+
+                if (self.args.merge):
+                    image_merge(image[i], pre_color_image, merge_label_name)
+                    print('save image: {}'.format(merge_label_name))
+            
+        return predictions, task_embeddings
+
     def task_divide(self):
         seen_task_samples, unseen_task_samples = [], []
         self.model.eval()

@@ -269,9 +269,11 @@ class ResNet(nn.Module):
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
+        pool1 = x
 
         features = []
         x, skip = self.forward_resblock(x, self.layer1)
+        pool2 = x
         features += [skip]
         x, skip = self.forward_resblock(x, self.layer2)
         features += [skip]
@@ -279,7 +281,9 @@ class ResNet(nn.Module):
         features += [skip]
         x, skip = self.forward_resblock(x.detach(), self.layer4)
         features += [self.spp.forward(skip)]
-        return features
+        
+        embedding_feats = [pool1, pool2]
+        return features, embedding_feats
 
     def forward_down_fusion(self, rgb, depth):
         x = self.conv1(rgb)
@@ -334,7 +338,9 @@ class ResNet(nn.Module):
 
 
     def forward_up(self, features):
-        features = features[::-1]
+        features_ = features[0]
+        embedding_feats = features[1]
+        features = features_[::-1]
 
         x = features[0]
 
@@ -348,7 +354,7 @@ class ResNet(nn.Module):
             else:
                 x = up(x, skip)
             upsamples += [x]
-        return x, {'features': features, 'upsamples': upsamples}
+        return x, {'features': features, 'upsamples': upsamples}, embedding_feats
 
     def forward(self, rgb, depth = None):
         if depth is None:

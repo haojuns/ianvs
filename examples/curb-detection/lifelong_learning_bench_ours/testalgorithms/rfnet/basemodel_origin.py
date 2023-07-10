@@ -73,28 +73,15 @@ class BaseModel:
         return self.train_model_url
 
     def predict(self, data, **kwargs):
-        if "app" in kwargs:
-            if kwargs["app"] == "embedding_extraction":
-                if not isinstance(data[0][0], dict):
-                    data = self._preprocess(data)
+        if not isinstance(data[0][0], dict):
+            data = self._preprocess(data)
 
-                if type(data) is np.ndarray:
-                    data = data.tolist()
+        if type(data) is np.ndarray:
+            data = data.tolist()
 
-                self.validator.test_loader = DataLoader(data, batch_size=self.val_args.test_batch_size, shuffle=False,
-                                                        pin_memory=True)
-                return self.validator.extraction_embedding()
-            
-        else:
-            if not isinstance(data[0][0], dict):
-                data = self._preprocess(data)
-
-            if type(data) is np.ndarray:
-                data = data.tolist()
-
-            self.validator.test_loader = DataLoader(data, batch_size=self.val_args.test_batch_size, shuffle=False,
-                                                    pin_memory=True)
-            return self.validator.validate()
+        self.validator.test_loader = DataLoader(data, batch_size=self.val_args.test_batch_size, shuffle=False,
+                                                pin_memory=True)
+        return self.validator.validate()
 
     def evaluate(self, data, **kwargs):
         self.val_args.save_predicted_image = kwargs.get("save_predicted_image", True)

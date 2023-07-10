@@ -55,6 +55,8 @@ class LifelongLearning(ParadigmBase):
     """
 
     def __init__(self, workspace, **kwargs):
+        # import pdb
+        # pdb.set_trace()
         ParadigmBase.__init__(self, workspace, **kwargs)
 
         self.incremental_learning_data_setting = kwargs.get("lifelong_learning_data_setting")
