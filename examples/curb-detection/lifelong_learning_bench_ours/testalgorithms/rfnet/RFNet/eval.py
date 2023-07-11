@@ -50,9 +50,8 @@ class Validator(object):
         print('Model loaded successfully!')
 
         # # Load weights
-        # assert os.path.exists(args.weight_path), 'weight-path:{} doesn\'t exit!'.format(args.weight_path)
-        # self.new_state_dict = torch.load(args.weight_path, map_location=torch.device("cpu"))
-        # self.model = load_my_state_dict(self.model, self.new_state_dict['state_dict'])
+        self.new_state_dict = None
+        #self.model = load_my_state_dict(self.model, self.new_state_dict['state_dict'])
 
     def validate(self):        
         self.model.eval()

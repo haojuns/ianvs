@@ -34,6 +34,7 @@ class Trainer(object):
         self.std_depth = torch.as_tensor(0.09752, dtype=torch.float32, device='cpu')
         self.nclass = args.num_class
         # Define Dataloader
+        self.new_state_dict=None
         kwargs = {'num_workers': args.workers, 'pin_memory': False}
         self.train_loader, self.val_loader, self.test_loader, _ = make_data_loader(args, train_data=train_data, 
                                                                                    valid_data=valid_data, **kwargs)                                                                                       
@@ -91,11 +92,41 @@ class Trainer(object):
         # Clear start epoch if fine-tuning
         if args.ft:
             args.start_epoch = 0
+        
+        self.freeze_bn_num = 0
 
-    def training(self, epoch):
+    def freeze_bn(self, m):
+        classname = m.__class__.__name__
+        if classname.find('BatchNorm') != -1:
+            if m.num_features == 64 and self.freeze_bn_num < 10:
+                # print(classname)
+                m.eval()
+                self.freeze_bn_num = self.freeze_bn_num + 1
+
+    def training(self, epoch, **kwargs):
         train_loss = 0.0
         print(self.optimizer.state_dict()['param_groups'][0]['lr'])
+
+        # 冻结embedding extraction layers
         self.model.train()
+        if "frozen" in kwargs:
+            if kwargs["frozen"] == True:
+                print("Begin freezing embedding extraction layers.")
+                # 冻结conv
+                freeze_paras = ['backbone.conv1.weight', 'backbone.bn1.weight', 'backbone.bn1.bias', 'backbone.bn1_d.weight', 'backbone.bn1_d.bias']
+                for name, para in self.model.named_parameters():
+                    if name in freeze_paras or 'backbone.layer1' in name:
+                        print(name)
+                        para.requires_grad_(False)
+                    """
+                    if name.find('bn') != -1:
+                        if '64' in str(para.shape):
+                            print(name)
+                    """
+                # 冻结BN
+                self.model.apply(self.freeze_bn)
+                self.freeze_bn_num = 0
+
         tbar = tqdm(self.train_loader)
         num_img_tr = len(self.train_loader)
 

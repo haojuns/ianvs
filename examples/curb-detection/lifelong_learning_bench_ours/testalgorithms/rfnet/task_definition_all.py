@@ -60,31 +60,27 @@ class TaskDefinitionAll:
             style_df[i].x, style_df[i].y=[], []
             
         import pdb
-        pdb.set_trace()
+        #pdb.set_trace()
 
         #聚类
-        style_prototype, style_index = self.style_mining(task_embeddings)
+        embedding_prototype, embedding_index = self.embedding_mining(task_embeddings)
         
         #分配数据
         for i in range(samples.num_examples()):
-            style_df[style_index[i]].x.append(x_data[i])
-            style_df[style_index[i]].y.append(y_data[i])
+            style_df[embedding_index[i]].x.append(x_data[i])
+            style_df[embedding_index[i]].y.append(y_data[i])
 
         #创建任务
         tasks=[]
         for i in range(self.splits):
             g_attr='style_'+str(i)+'_model'
-            task_obj = Task(entry=g_attr, samples=style_df[i], meta_attr=str(i))
+            task_obj = Task(entry=g_attr, samples=style_df[i], meta_attr=embedding_prototype[i])
             tasks.append(task_obj)
-        
-        """
-        for程: task_embeddings是一个二维数组, axis_y是图片名称, axis_x是该图片对应的表征向量(256维), 且这个图片顺序和x_data的顺序一致
-        程请首先加入k-means++算法进行数据划分, 然后参考task_definition_by_origin.py中对cityscapes的流程, 进行返回对应的tasks, task_index, samples
-        """
+
 
         return tasks, task_index, samples
     
-    def style_mining(self, task_embeddings):
+    def embedding_mining(self, task_embeddings):
         # 提取图片的向量和路径
         vectors, _ = zip(*task_embeddings)
 
@@ -92,9 +88,9 @@ class TaskDefinitionAll:
         kmeans = KMeans(n_clusters=self.splits, init='k-means++', random_state=0).fit(vectors)
 
         # 获取聚类结果
-        style_prototype = kmeans.cluster_centers_
-        style_index = kmeans.labels_
+        embedding_prototype = kmeans.cluster_centers_
+        embedding_index = kmeans.labels_
 
         # 返回聚类中心向量和每张图片的所属类
-        return style_prototype, style_index
+        return embedding_prototype, embedding_index
 

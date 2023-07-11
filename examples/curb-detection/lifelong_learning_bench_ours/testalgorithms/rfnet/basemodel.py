@@ -35,22 +35,22 @@ class BaseModel:
         self.val_args.merge_label_save_path = os.path.join(label_save_dir, "merge")
         self.val_args.label_save_path = os.path.join(label_save_dir, "label")
         
-        import pdb
-        #pdb.set_trace()
-        
-        self.validator=Validator(self.val_args)
 
     def train(self, train_data, valid_data=None, **kwargs):
         import pdb
         #pdb.set_trace()
         self.trainer = Trainer(self.train_args, train_data=train_data)
+        
+        if "model_url" in kwargs:
+            self.trainer_load(kwargs["model_url"]) 
+
         print("Total epoches:", self.trainer.args.epochs)
         for epoch in range(
                 self.trainer.args.start_epoch,
                 self.trainer.args.epochs):
             if epoch == 0 and self.trainer.val_loader:
                 self.trainer.validation(epoch)
-            self.trainer.training(epoch)
+            self.trainer.training(epoch, **kwargs)
 
             if self.trainer.args.no_val and (
                     epoch %
@@ -73,6 +73,9 @@ class BaseModel:
         return self.train_model_url
 
     def predict(self, data, **kwargs):
+        
+        self.validator=Validator(self.val_args)
+        
         if "app" in kwargs:
             if kwargs["app"] == "embedding_extraction":
                 if not isinstance(data[0][0], dict):
@@ -80,9 +83,13 @@ class BaseModel:
 
                 if type(data) is np.ndarray:
                     data = data.tolist()
+                    
+                import pdb
+                #pdb.set_trace()
+                    
+                self.validator_load(kwargs["model_url"])
 
-                self.validator.test_loader = DataLoader(data, batch_size=self.val_args.test_batch_size, shuffle=False,
-                                                        pin_memory=True)
+                self.validator.test_loader = DataLoader(data, batch_size=self.val_args.test_batch_size, shuffle=False, pin_memory=True)
                 return self.validator.extraction_embedding()
             
         else:
@@ -106,15 +113,25 @@ class BaseModel:
         else:
             raise Exception(f"not found model metric func(name={metric_name}) in model eval phase")
 
-    def load(self, model_url, **kwargs):
+    def validator_load(self, model_url, **kwargs):
         if model_url:
             '''import pdb
             pdb.set_trace()'''
             self.validator.new_state_dict = torch.load(model_url, map_location=torch.device("cpu"))
-            self.train_args.resume = model_url
+            #self.train_args.resume = model_url
         else:
             raise Exception("model url does not exist.")
         self.validator.model = load_my_state_dict(self.validator.model, self.validator.new_state_dict['state_dict'])
+        
+    def trainer_load(self, model_url, **kwargs):
+        if model_url:
+            '''import pdb
+            pdb.set_trace()'''
+            self.trainer.new_state_dict = torch.load(model_url, map_location=torch.device("cpu"))
+            #self.train_args.resume = model_url
+        else:
+            raise Exception("model url does not exist.")
+        self.trainer.model = load_my_state_dict(self.trainer.model, self.trainer.new_state_dict['state_dict'])
 
     def save(self, model_path=None):
         # TODO: save unstructured data model
