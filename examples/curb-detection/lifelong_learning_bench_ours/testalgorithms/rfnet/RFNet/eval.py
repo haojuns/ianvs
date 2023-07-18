@@ -1,4 +1,5 @@
 import argparse
+from collections import OrderedDict
 import os
 import numpy as np
 from tqdm import tqdm
@@ -259,13 +260,28 @@ def image_merge(image, label, save_name):
     image.save(save_name)
 
 def load_my_state_dict(model, state_dict):  # custom function to load model when not all dict elements
-    own_state = model.state_dict()
+    module_flag=0
+    for layer_name, layer_param in model.state_dict().items():
+        if 'module' in layer_name:
+            module_flag=1
+            break
+        
+    import pdb
+    #pdb.set_trace()
     for name, param in state_dict.items():
-        if name not in own_state:
-            print('{} not in model_state'.format(name))
+        
+        if module_flag==1 and 'module' not in name:
+            new_name = 'module.'+ name  
+        elif module_flag==0 and 'module' in name:
+            new_name=name.replace('module.', '')
+        else:
+            new_name=name
+            
+        if new_name not in model.state_dict():
+            print('{} not in model_state'.format(new_name))
             continue
         else:
-            own_state[name].copy_(param)
+            model.state_dict()[new_name].copy_(param)
 
     return model
 

@@ -182,7 +182,7 @@ class Evaluator(object):
                     np.diag(self.confusion_matrix))
 
         FWIoU = (freq[freq > 0] * iu[freq > 0]).sum()
-        CFWIoU = freq[freq > 0] * iu[freq > 0]
+        CFWIoU = freq * iu
         print('-----------FWIoU of each classes-----------')
         print("road         : %.6f" % (CFWIoU[0] * 100.0), "%\t")
         print("sidewalk     : %.6f" % (CFWIoU[1] * 100.0), "%\t")

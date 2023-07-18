@@ -39,34 +39,56 @@ class BaseModel:
     def train(self, train_data, valid_data=None, **kwargs):
         import pdb
         #pdb.set_trace()
-        self.trainer = Trainer(self.train_args, train_data=train_data)
+        if "frozen" in kwargs and kwargs["frozen"]:
+            self.trainer = Trainer(self.train_args, train_data=train_data,valid_data=valid_data)
+        else:
+            self.trainer = Trainer(self.train_args, train_data=train_data,valid_data=valid_data)
         
         if "model_url" in kwargs:
             self.trainer_load(kwargs["model_url"]) 
-
-        print("Total epoches:", self.trainer.args.epochs)
-        for epoch in range(
-                self.trainer.args.start_epoch,
-                self.trainer.args.epochs):
+        
+        epochs=self.trainer.args.FT_epochs if "Early_stop" in kwargs and kwargs["Early_stop"] else self.trainer.args.epochs
+        
+        print("Total epoches:", epochs)
+        best_acc,flag=0,0
+        
+        for epoch in range(self.trainer.args.start_epoch,epochs):
             if epoch == 0 and self.trainer.val_loader:
                 self.trainer.validation(epoch)
             self.trainer.training(epoch, **kwargs)
-
-            if self.trainer.args.no_val and (
-                    epoch %
-                    self.trainer.args.eval_interval == (
-                            self.trainer.args.eval_interval -
-                            1) or epoch == self.trainer.args.epochs -
-                    1):
-                # save checkpoint when it meets eval_interval or the training
-                # finished
-                is_best = False
-                self.train_model_url = self.trainer.saver.save_checkpoint({
-                    'epoch': epoch + 1,
-                    'state_dict': self.trainer.model.state_dict(),
-                    'optimizer': self.trainer.optimizer.state_dict(),
-                    'best_pred': self.trainer.best_pred,
-                }, is_best)
+            
+            import pdb
+            #pdb.set_trace()
+            if "Early_stop" in kwargs:
+                if kwargs["Early_stop"] and epoch % 1 == 0:
+                    current_acc=self.trainer.validation_without_save(epoch)
+                    if current_acc > best_acc:
+                            best_acc = current_acc
+                            flag = 0
+                            is_best=False
+                            self.train_model_url = self.trainer.saver.save_checkpoint({
+                                'epoch': epoch + 1,
+                                'state_dict': self.trainer.model.state_dict(),
+                                'optimizer': self.trainer.optimizer.state_dict(),
+                                'best_pred': self.trainer.best_pred,
+                            }, is_best)
+                    else: # 自定义epoch间隔内，val的精度没有增长，那么终止训练
+                        flag = flag + 1
+                        if flag == 6:
+                            break
+                    print("flag: ",flag,"; current_acc: ",current_acc,"; best_acc: ",best_acc)
+            else:
+                if self.trainer.args.no_val and (epoch %self.trainer.args.eval_interval == (self.trainer.args.eval_interval -1) or epoch == self.trainer.args.epochs -1):
+                    # save checkpoint when it meets eval_interval or the training
+                    # finished
+                    is_best = False
+                    self.train_model_url = self.trainer.saver.save_checkpoint({
+                        'epoch': epoch + 1,
+                        'state_dict': self.trainer.model.state_dict(),
+                        'optimizer': self.trainer.optimizer.state_dict(),
+                        'best_pred': self.trainer.best_pred,
+                    }, is_best)
+                
 
         self.trainer.writer.close()
 
@@ -86,7 +108,7 @@ class BaseModel:
                     
                 import pdb
                 #pdb.set_trace()
-                    
+                
                 self.validator_load(kwargs["model_url"])
 
                 self.validator.test_loader = DataLoader(data, batch_size=self.val_args.test_batch_size, shuffle=False, pin_memory=True)
@@ -99,8 +121,14 @@ class BaseModel:
             if type(data) is np.ndarray:
                 data = data.tolist()
 
-            self.validator.test_loader = DataLoader(data, batch_size=self.val_args.test_batch_size, shuffle=False,
-                                                    pin_memory=True)
+            self.validator.test_loader = DataLoader(data, batch_size=self.val_args.test_batch_size, shuffle=False,pin_memory=True)
+            
+            import pdb
+            #pdb.set_trace()
+            
+            if "model_url" in kwargs:
+                self.validator_load(kwargs["model_url"])
+            
             return self.validator.validate()
 
     def evaluate(self, data, **kwargs):
@@ -118,6 +146,7 @@ class BaseModel:
             '''import pdb
             pdb.set_trace()'''
             self.validator.new_state_dict = torch.load(model_url, map_location=torch.device("cpu"))
+            print("Validator is loading from ",model_url)
             #self.train_args.resume = model_url
         else:
             raise Exception("model url does not exist.")
@@ -128,6 +157,7 @@ class BaseModel:
             '''import pdb
             pdb.set_trace()'''
             self.trainer.new_state_dict = torch.load(model_url, map_location=torch.device("cpu"))
+            print("Trainer is loading from ",model_url)
             #self.train_args.resume = model_url
         else:
             raise Exception("model url does not exist.")

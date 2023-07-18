@@ -50,6 +50,8 @@ def accuracy(y_true, y_pred, **kwargs):
 
     # Test during the training
     # Acc = evaluator.Pixel_Accuracy()
+    import pdb
+    #pdb.set_trace()
     CPA = evaluator.Pixel_Accuracy_Class()
     mIoU = evaluator.Mean_Intersection_over_Union()
     FWIoU = evaluator.Frequency_Weighted_Intersection_over_Union()

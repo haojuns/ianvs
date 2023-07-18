@@ -2,9 +2,9 @@ testenv:
   # dataset configuration
   dataset: 
     # the url address of train dataset index; string type;
-    train_url: "/data/user8302433/fc/dataset/curb-detection/train_data/index.txt"
+    train_url: "/data/user8302433/fc/dataset/CampusE1/train_data_gray/index.txt"
     # the url address of test dataset index; string type;
-    test_url: "/data/user8302433/fc/dataset/curb-detection/test_data/index.txt"
+    test_url: "/data/user8302433/fc/dataset/CampusE1/test_data_gray/index.txt"
 
   # model eval configuration of incremental learning;
   model_eval:

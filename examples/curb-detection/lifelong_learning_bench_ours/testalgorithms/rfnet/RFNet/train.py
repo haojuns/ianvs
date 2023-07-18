@@ -21,7 +21,7 @@ from utils.metrics import Evaluator
 from sedna.datasources import BaseDataSource
 
 class Trainer(object):
-    def __init__(self, args, train_data=None, valid_data=None):
+    def __init__(self, args, train_data=None, valid_data=None,**kwargs):
         self.args = args
         # Define Saver
         self.saver = Saver(args)
@@ -36,17 +36,29 @@ class Trainer(object):
         # Define Dataloader
         self.new_state_dict=None
         kwargs = {'num_workers': args.workers, 'pin_memory': False}
+        import pdb
+        #pdb.set_trace()
         self.train_loader, self.val_loader, self.test_loader, _ = make_data_loader(args, train_data=train_data, 
                                                                                    valid_data=valid_data, **kwargs)                                                                                       
                                 
         # Define network
         resnet = resnet18(pretrained=True, efficient=False, use_bn=True)
         model = RFNet(resnet, num_classes=self.nclass, use_bn=True)
-        train_params = [{'params': model.random_init_params(), 'lr': args.lr},
-                        {'params': model.fine_tune_params(), 'lr': 0.1*args.lr, 'weight_decay':args.weight_decay}]
+        '''train_params = [{'params': model.random_init_params(), 'lr': args.lr},
+                        {'params': model.fine_tune_params(), 'lr': 0.1*args.lr, 'weight_decay':args.weight_decay}]'''
+        
         # Define Optimizer
-        optimizer = torch.optim.Adam(train_params, lr=args.lr,
-                                    weight_decay=args.weight_decay)
+        if "frozen" in kwargs and kwargs["frozen"]:
+            train_params = [{'params': model.random_init_params()},
+                        {'params': model.fine_tune_params(), 'lr': args.FT_lr, 'weight_decay':args.weight_decay}]
+            optimizer = torch.optim.Adam(train_params, lr=args.FT_lr*4,
+                                        weight_decay=args.weight_decay*4)
+        else:
+            train_params = [{'params': model.random_init_params()},
+                        {'params': model.fine_tune_params(), 'lr': args.lr, 'weight_decay':args.weight_decay}]
+            optimizer = torch.optim.Adam(train_params, lr=args.lr*4,
+                                        weight_decay=args.weight_decay*4)
+            
         # Define Criterion
         # whether to use class balanced weights
         if args.use_balanced_weights:
@@ -116,7 +128,7 @@ class Trainer(object):
                 freeze_paras = ['backbone.conv1.weight', 'backbone.bn1.weight', 'backbone.bn1.bias', 'backbone.bn1_d.weight', 'backbone.bn1_d.bias']
                 for name, para in self.model.named_parameters():
                     if name in freeze_paras or 'backbone.layer1' in name:
-                        print(name)
+                        # print(name)
                         para.requires_grad_(False)
                     """
                     if name.find('bn') != -1:
@@ -249,3 +261,39 @@ class Trainer(object):
                 'optimizer': self.optimizer.state_dict(),
                 'best_pred': self.best_pred,
             }, is_best)
+            
+    
+    def validation_without_save(self, epoch):
+        self.model.eval()
+        self.evaluator.reset()
+        tbar = tqdm(self.val_loader, desc='\r')
+        test_loss = 0.0
+        for i, (sample, img_path) in enumerate(tbar):
+            if self.args.depth:
+                image, depth, target = sample['image'], sample['depth'], sample['label']
+            else:
+                image, target = sample['image'], sample['label']
+                # print(f"val image is {image}")
+            if self.args.cuda:
+                image, target = image.cuda(), target.cuda()
+                if self.args.depth:
+                    depth = depth.cuda()
+            with torch.no_grad():
+                if self.args.depth:
+                    output = self.model(image, depth)
+                else:
+                    output = self.model(image)
+            target[target > self.nclass-1] = 255
+            loss = self.criterion(output, target)
+            test_loss += loss.item()
+            tbar.set_description('Test loss: %.3f' % (test_loss / (i + 1)))
+            pred = output.data.cpu().numpy()
+            target = target.cpu().numpy()
+            pred = np.argmax(pred, axis=1)
+            # Add batch sample into evaluator
+            self.evaluator.add_batch(target, pred)
+
+        # Fast test during the training
+        mIoU = self.evaluator.Mean_Intersection_over_Union()
+                    
+        return mIoU

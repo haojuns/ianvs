@@ -83,21 +83,26 @@ class LifelongLearning(ParadigmBase):
 
         """
 
-        rounds = self.incremental_rounds
+        rounds = self.incremental_rounds-1
         samples_transfer_ratio_info = self.system_metric_info.get(
             SystemMetricType.SAMPLES_TRANSFER_RATIO.value)
 
+        #dataset_files = self._split_dataset(splitting_dataset_times=rounds)
         dataset_files = self._split_dataset(splitting_dataset_times=rounds)
 
         # pylint: disable=C0103
         for r in range(1, rounds + 1):    
             if r == 1:
                 print("------------------------original train -------------------")
-                train_dataset_file, eval_dataset_file = dataset_files[r - 1]
-                self.cloud_task_index = self._train(self.cloud_task_index, train_dataset_file, r)
                 
                 import pdb
                 #pdb.set_trace()
+                train_dataset_file, eval_dataset_file = dataset_files[r - 1]
+                
+                
+                self.cloud_task_index = self._train(self.cloud_task_index, train_dataset_file,eval_dataset_file, r)
+                
+                
                 
                 self.edge_task_index = self._eval(self.cloud_task_index, eval_dataset_file, r)
                 
@@ -127,10 +132,11 @@ class LifelongLearning(ParadigmBase):
                 #pdb.set_trace()
                 #cloud_task_index:  './workspace/benchmarkingjob/rfnet_lifelong_learning/7f78fd26-141c-11ee-ba17-a906087290a8/output/train/2/index.pkl'
                 self.edge_task_index = self._eval(self.cloud_task_index, eval_dataset_file, r)
+                
+        import pdb
+        pdb.set_trace()
 
-        test_res, unseen_task_train_samples = self._inference(self.edge_task_index,
-                                                              self.dataset.test_url,
-                                                              "test")
+        test_res, unseen_task_train_samples = self._inference(self.cloud_task_index,self.dataset.test_url,"test")
         #pdb.set_trace()
 
         samples_transfer_ratio_info.append((test_res, unseen_task_train_samples.x))
@@ -192,7 +198,7 @@ class LifelongLearning(ParadigmBase):
 
         return inference_results, unseen_task_train_samples
 
-    def _train(self, cloud_task_index, train_dataset, rounds):
+    def _train(self, cloud_task_index, train_dataset, eval_dataset,rounds):
         train_output_dir = os.path.join(self.workspace, f"output/train/{rounds}")
         if not is_local_dir(train_output_dir):
             os.makedirs(train_output_dir)
@@ -207,13 +213,17 @@ class LifelongLearning(ParadigmBase):
         if isinstance(train_dataset, str):
             train_dataset = self.dataset.load_data(train_dataset, "train",
                                                    feature_process=_data_feature_process)
+        if isinstance(eval_dataset, str):
+            eval_dataset = self.dataset.load_data(eval_dataset, "eval",
+                                                feature_process=_data_feature_process)
+        
 
         job = self.build_paradigm_job(ParadigmType.LIFELONG_LEARNING.value)
         
         import pdb
         #pdb.set_trace()
         
-        cloud_task_index = job.train(train_dataset)
+        cloud_task_index = job.train(train_dataset,eval_dataset)
         del job
     
         return cloud_task_index
@@ -252,14 +262,11 @@ class LifelongLearning(ParadigmBase):
         # pylint:disable=duplicate-code
         train_dataset_ratio = self.incremental_learning_data_setting.get("train_ratio")
         splitting_dataset_method = self.incremental_learning_data_setting.get("splitting_method")
+        
+        import pdb
+        #pdb.set_trace()
 
-        return self.dataset.split_dataset(self.dataset.train_url,
-                                          get_file_format(self.dataset.train_url),
-                                          train_dataset_ratio,
-                                          method=splitting_dataset_method,
-                                          dataset_types=("model_train", "model_eval"),
-                                          output_dir=self.dataset_output_dir(),
-                                          times=splitting_dataset_times)
+        return self.dataset.split_dataset(self.dataset.train_url,get_file_format(self.dataset.train_url),train_dataset_ratio,method=splitting_dataset_method,dataset_types=("model_train", "model_eval"),output_dir=self.dataset_output_dir(),times=splitting_dataset_times)
 
 
 def _data_feature_process(line: str):

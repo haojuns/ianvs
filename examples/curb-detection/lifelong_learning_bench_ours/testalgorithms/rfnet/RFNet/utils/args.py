@@ -10,6 +10,7 @@ class TrainArgs:
         
         #self.epochs = kwargs.get("epochs", 2)
         self.epochs = kwargs.get("epochs", 1)
+        self.FT_epochs = 1
         self.start_epoch = 0
 
         #self.batch_size = 4
@@ -18,12 +19,17 @@ class TrainArgs:
         self.val_batch_size = 1
         self.use_balanced_weights = False
         self.num_class = 24
+        
         self.lr = kwargs.get("learning_rate", 1e-4)
+        self.FT_lr = 1e-5
+        
+        self.weight_decay = 2.5e-5
+        
         self.lr_scheduler = 'cos'
         self.momentum = 0.9
-        self.weight_decay = 2.5e-5
+        
         self.no_cuda = False
-        self.gpu_ids = '0'
+        self.gpu_ids = [0,1,2,3]
 
         self.seed = 1
         self.resume = None
@@ -31,7 +37,7 @@ class TrainArgs:
         self.ft = True
         self.eval_interval = kwargs.get("eval_interval", 2)
         self.no_val = kwargs.get("no_val", True)
-        self.cuda = False
+        self.cuda = True
 
 
 class ValArgs:
