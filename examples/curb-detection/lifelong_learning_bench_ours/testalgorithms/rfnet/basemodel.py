@@ -38,45 +38,44 @@ class BaseModel:
 
     def train(self, train_data, valid_data=None, **kwargs):
         import pdb
-        #pdb.set_trace()
-        if "frozen" in kwargs and kwargs["frozen"]:
-            self.trainer = Trainer(self.train_args, train_data=train_data,valid_data=valid_data)
-        else:
-            self.trainer = Trainer(self.train_args, train_data=train_data,valid_data=valid_data)
-        
+        # pdb.set_trace()
+
+        self.trainer = Trainer(self.train_args, train_data=train_data, valid_data=valid_data)
+
         if "model_url" in kwargs:
             self.trainer_load(kwargs["model_url"]) 
         
-        epochs=self.trainer.args.FT_epochs if "Early_stop" in kwargs and kwargs["Early_stop"] else self.trainer.args.epochs
+        epochs = self.trainer.args.FT_epochs if "Early_stop" in kwargs and kwargs["Early_stop"] else self.trainer.args.epochs
         
         print("Total epoches:", epochs)
-        best_acc,flag=0,0
-        
-        for epoch in range(self.trainer.args.start_epoch,epochs):
+        best_acc, flag = 0, 0
+
+        # pdb.set_trace()
+        for epoch in range(self.trainer.args.start_epoch, epochs):
             if epoch == 0 and self.trainer.val_loader:
                 self.trainer.validation(epoch)
             self.trainer.training(epoch, **kwargs)
             
             import pdb
-            #pdb.set_trace()
+            # pdb.set_trace()
             if "Early_stop" in kwargs:
                 if kwargs["Early_stop"] and epoch % 1 == 0:
-                    current_acc=self.trainer.validation_without_save(epoch)
+                    current_acc = self.trainer.validation_without_save(epoch)
                     if current_acc > best_acc:
-                            best_acc = current_acc
-                            flag = 0
-                            is_best=False
-                            self.train_model_url = self.trainer.saver.save_checkpoint({
-                                'epoch': epoch + 1,
-                                'state_dict': self.trainer.model.state_dict(),
-                                'optimizer': self.trainer.optimizer.state_dict(),
-                                'best_pred': self.trainer.best_pred,
-                            }, is_best)
-                    else: # 自定义epoch间隔内，val的精度没有增长，那么终止训练
+                        best_acc = current_acc
+                        flag = 0
+                        is_best = False
+                        self.train_model_url = self.trainer.saver.save_checkpoint({
+                            'epoch': epoch + 1,
+                            'state_dict': self.trainer.model.state_dict(),
+                            'optimizer': self.trainer.optimizer.state_dict(),
+                            'best_pred': self.trainer.best_pred,
+                        }, is_best)
+                    else: # 自定义epoch间隔内，val的精度没有增长，那么提前终止微调训练
                         flag = flag + 1
-                        if flag == 6:
+                        if flag == 5:
                             break
-                    print("flag: ",flag,"; current_acc: ",current_acc,"; best_acc: ",best_acc)
+                    print("flag: ", flag,"; current_acc: ", current_acc,"; best_acc: ", best_acc)
             else:
                 if self.trainer.args.no_val and (epoch %self.trainer.args.eval_interval == (self.trainer.args.eval_interval -1) or epoch == self.trainer.args.epochs -1):
                     # save checkpoint when it meets eval_interval or the training
@@ -88,7 +87,6 @@ class BaseModel:
                         'optimizer': self.trainer.optimizer.state_dict(),
                         'best_pred': self.trainer.best_pred,
                     }, is_best)
-                
 
         self.trainer.writer.close()
 
@@ -96,7 +94,7 @@ class BaseModel:
 
     def predict(self, data, **kwargs):
         
-        self.validator=Validator(self.val_args)
+        self.validator = Validator(self.val_args)
         
         if "app" in kwargs:
             if kwargs["app"] == "embedding_extraction":
@@ -107,7 +105,7 @@ class BaseModel:
                     data = data.tolist()
                     
                 import pdb
-                #pdb.set_trace()
+                # pdb.set_trace()
                 
                 self.validator_load(kwargs["model_url"])
 
@@ -124,7 +122,7 @@ class BaseModel:
             self.validator.test_loader = DataLoader(data, batch_size=self.val_args.test_batch_size, shuffle=False,pin_memory=True)
             
             import pdb
-            #pdb.set_trace()
+            # pdb.set_trace()
             
             if "model_url" in kwargs:
                 self.validator_load(kwargs["model_url"])

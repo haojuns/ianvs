@@ -87,57 +87,46 @@ class LifelongLearning(ParadigmBase):
         samples_transfer_ratio_info = self.system_metric_info.get(
             SystemMetricType.SAMPLES_TRANSFER_RATIO.value)
 
-        #dataset_files = self._split_dataset(splitting_dataset_times=rounds)
+        # dataset_files = self._split_dataset(splitting_dataset_times=rounds)
         dataset_files = self._split_dataset(splitting_dataset_times=rounds)
 
         # pylint: disable=C0103
         for r in range(1, rounds + 1):    
             if r == 1:
                 print("------------------------original train -------------------")
-                
+
                 import pdb
-                #pdb.set_trace()
+                # pdb.set_trace()
                 train_dataset_file, eval_dataset_file = dataset_files[r - 1]
-                
-                
-                self.cloud_task_index = self._train(self.cloud_task_index, train_dataset_file,eval_dataset_file, r)
-                
-                
-                
-                self.edge_task_index = self._eval(self.cloud_task_index, eval_dataset_file, r)
-                
-                #self.cloud_task_index: './workspace/benchmarkingjob/rfnet_lifelong_learning/c42936c2-1361-11ee-be1c-45d24106221e/output/train/1/index.pkl'
-                #self.edge_task_index: './workspace/benchmarkingjob/rfnet_lifelong_learning/c42936c2-1361-11ee-be1c-45d24106221e/output/eval/1/index.pkl'
-                #经过初始训练后，得到的任务index是cloud_task_index；而再经过一次eval后，得到的任务index是edge_task_index。可能metric信息发生了变化，模型本身是没什么区别的 (对第一轮进行评估，使用云任务索引和评估集进行评估。评估结果生成边缘任务索引。)
-                               
+
+                self.cloud_task_index = self._train(self.cloud_task_index, train_dataset_file, eval_dataset_file, r) # initial_train, res未用
+
+                self.edge_task_index = self._eval(self.cloud_task_index, eval_dataset_file, r) # res未用
+
+                # self.cloud_task_index: './workspace/benchmarkingjob/rfnet_lifelong_learning/c42936c2-1361-11ee-be1c-45d24106221e/output/train/1/index.pkl'
+                # self.edge_task_index: './workspace/benchmarkingjob/rfnet_lifelong_learning/c42936c2-1361-11ee-be1c-45d24106221e/output/eval/1/index.pkl'
+                # 经过初始训练后，得到的任务index是cloud_task_index；而再经过一次eval后，得到的任务index是edge_task_index。可能metric信息发生了变化，模型本身是没什么区别的 (对第一轮进行评估，使用云任务索引和评估集进行评估。评估结果生成edge_task_index。)
+
             else:
                 print("------------------------"+str(r)+" th train -------------------")
                 infer_dataset_file, eval_dataset_file = dataset_files[r - 1]
 
-                #pdb.set_trace()
-                inference_results, unseen_task_train_samples = self._inference(self.edge_task_index, infer_dataset_file, r)#很关键的一步,在train之前先划分出unseen样本，然后只只只使用unseen样本训练！！！
-                
+                inference_results, unseen_task_train_samples = self._inference(self.edge_task_index, infer_dataset_file, r) # 很关键的一步,在train之前先划分出unseen样本，然后只只只使用unseen样本训练！！！
+
                 samples_transfer_ratio_info.append((inference_results, unseen_task_train_samples.x))
 
                 # If no unseen task samples in the this round, starting the next round
                 if len(unseen_task_train_samples.x) <= 0:
-                    continue     
-                
-                import pdb
-                #pdb.set_trace()
+                    continue
 
-                self.cloud_task_index = self._train(self.cloud_task_index,
-                                                    unseen_task_train_samples,
-                                                    r)
-                #pdb.set_trace()
-                #cloud_task_index:  './workspace/benchmarkingjob/rfnet_lifelong_learning/7f78fd26-141c-11ee-ba17-a906087290a8/output/train/2/index.pkl'
-                self.edge_task_index = self._eval(self.cloud_task_index, eval_dataset_file, r)
-                
+                self.cloud_task_index = self._train(self.cloud_task_index, unseen_task_train_samples, r) # update, res未用
+
+                # cloud_task_index:  './workspace/benchmarkingjob/rfnet_lifelong_learning/7f78fd26-141c-11ee-ba17-a906087290a8/output/train/2/index.pkl'
+                self.edge_task_index = self._eval(self.cloud_task_index, eval_dataset_file, r) # res未用
+
         import pdb
-        pdb.set_trace()
-
-        test_res, unseen_task_train_samples = self._inference(self.cloud_task_index,self.dataset.test_url,"test")
-        #pdb.set_trace()
+        # pdb.set_trace()
+        test_res, unseen_task_train_samples = self._inference(self.cloud_task_index, self.dataset.test_url, "test")
 
         samples_transfer_ratio_info.append((test_res, unseen_task_train_samples.x))
 
@@ -180,10 +169,13 @@ class LifelongLearning(ParadigmBase):
 
         del job
 
-        unseen_task_train_samples = BaseDataSource(data_type="train")#unseen_task_train_samples是所有被划分为unseen的样本
+        import pdb
+        # pdb.set_trace()
+
+        unseen_task_train_samples = BaseDataSource(data_type="train") # unseen_task_train_samples是所有被划分为unseen的样本
         unseen_task_train_samples.x = np.array(unseen_tasks)
         unseen_task_train_samples.y = np.array(unseen_task_labels)
-        
+
         '''unseen_tasks:
         [array(['/data/user8302433/fc/dataset/curb-detection/train_data/images/real_aachen_000016_000019_leftImg8bit.png'],
             dtype='<U103'), array(['/data/user8302433/fc/dataset/curb-detection/train_data/images/real_aachen_000017_000019_leftImg8bit.png'],
@@ -193,8 +185,8 @@ class LifelongLearning(ParadigmBase):
             dtype='<U103'), array(['/data/user8302433/fc/dataset/curb-detection/train_data/images/real_aachen_000025_000019_leftImg8bit.png'],
             dtype='<U103'), array(['/data/user8302433/fc/dataset/curb-detection/train_data/images/real_aachen_000026_000019_leftImg8bit.png'],
             dtype='<U103')]'''
-            
-        #len(inference_results):  12
+
+        # len(inference_results):  12
 
         return inference_results, unseen_task_train_samples
 
@@ -216,16 +208,15 @@ class LifelongLearning(ParadigmBase):
         if isinstance(eval_dataset, str):
             eval_dataset = self.dataset.load_data(eval_dataset, "eval",
                                                 feature_process=_data_feature_process)
-        
 
         job = self.build_paradigm_job(ParadigmType.LIFELONG_LEARNING.value)
-        
+
         import pdb
-        #pdb.set_trace()
-        
-        cloud_task_index = job.train(train_dataset,eval_dataset)
+        # pdb.set_trace()
+
+        cloud_task_index = job.train(train_dataset, eval_dataset)
         del job
-    
+
         return cloud_task_index
 
     def _eval(self, cloud_task_index, data_index_file, rounds):
@@ -240,18 +231,18 @@ class LifelongLearning(ParadigmBase):
         os.environ["model_threshold"] = str(model_eval_info.get("threshold"))
         os.environ["operator"] = model_eval_info.get("operator")
         os.environ["MODEL_URLS"] = f"{cloud_task_index}"
-        
-        #print("MODEL_URLS: ",os.environ["MODEL_URLS"])
-        #MODEL_URLS:  ./workspace/benchmarkingjob/rfnet_lifelong_learning/42a54b7e-133c-11ee-be1c-45d24106221e/output/train/1/index.pkl
+
+        # print("MODEL_URLS: ",os.environ["MODEL_URLS"])
+        # MODEL_URLS:  ./workspace/benchmarkingjob/rfnet_lifelong_learning/42a54b7e-133c-11ee-be1c-45d24106221e/output/train/1/index.pkl
 
         eval_dataset = self.dataset.load_data(data_index_file, "eval",
                                               feature_process=_data_feature_process)
 
         job = self.build_paradigm_job(ParadigmType.LIFELONG_LEARNING.value)
         _, metric_func = get_metric_func(model_metric)
-        
+
         import pdb
-        #pdb.set_trace()
+        # pdb.set_trace()
         edge_task_index = job.evaluate(eval_dataset, metrics=metric_func)
 
         del job
@@ -262,7 +253,7 @@ class LifelongLearning(ParadigmBase):
         # pylint:disable=duplicate-code
         train_dataset_ratio = self.incremental_learning_data_setting.get("train_ratio")
         splitting_dataset_method = self.incremental_learning_data_setting.get("splitting_method")
-        
+
         import pdb
         #pdb.set_trace()
 

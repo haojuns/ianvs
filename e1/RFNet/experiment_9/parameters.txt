@@ -1,7 +1,0 @@
-datset:e1
-lr:0.0001
-lr_scheduler:cos
-loss_type:ce
-epoch:1
-base_size:1024
-crop_size:768

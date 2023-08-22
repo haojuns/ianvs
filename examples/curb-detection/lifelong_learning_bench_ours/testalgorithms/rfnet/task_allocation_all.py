@@ -49,17 +49,16 @@ class TaskAllocationAll:
             
             # 任务平均表征和测试样本表征的距离度量并选取最小距离作为任务序号
             for i in range(len(samples.x)):
-                distances=[]
+                distances = []
                 min_distance = 1
                 for j in range(self.splits):
-                    # 计算style_code的wasserstein_distance
+                    # 计算任务表征的Wasserstein距离
                     distances.append(wasserstein_distance(tasks_embeddings[i][0], meta_attrs[j]))
                     if distances[j] < min_distance:
                         min_distance = distances[j]
-                        min_distance_num=j
+                        min_distance_num = j
                 allocations.append(min_distance_num)
-                        
-            
+
             return samples, allocations
             
         else:

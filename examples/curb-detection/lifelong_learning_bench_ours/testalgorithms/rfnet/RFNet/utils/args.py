@@ -29,7 +29,8 @@ class TrainArgs:
         self.momentum = 0.9
         
         self.no_cuda = False
-        self.gpu_ids = [0,1,2,3]
+        # self.gpu_ids = [0,1,2,3]
+        self.gpu_ids = [0,1,2]
 
         self.seed = 1
         self.resume = None
